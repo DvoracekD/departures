@@ -138,8 +138,32 @@ enum GolemioClientError: LocalizedError, Sendable {
 
             return "Golemio returned HTTP \(statusCode)."
         case let .decoding(error):
-            return "Could not read Golemio response: \(error.localizedDescription)"
+            return "Could not read Golemio response: \(Self.describeDecodingError(error))"
         }
+    }
+
+    private static func describeDecodingError(_ error: Error) -> String {
+        guard let decodingError = error as? DecodingError else {
+            return error.localizedDescription
+        }
+
+        switch decodingError {
+        case let .keyNotFound(key, context):
+            return "Missing field '\(key.stringValue)' at \(codingPathDescription(context.codingPath))."
+        case let .typeMismatch(type, context):
+            return "Expected \(type) at \(codingPathDescription(context.codingPath)): \(context.debugDescription)"
+        case let .valueNotFound(type, context):
+            return "Missing \(type) value at \(codingPathDescription(context.codingPath))."
+        case let .dataCorrupted(context):
+            return "Invalid data at \(codingPathDescription(context.codingPath)): \(context.debugDescription)"
+        @unknown default:
+            return error.localizedDescription
+        }
+    }
+
+    private static func codingPathDescription(_ codingPath: [CodingKey]) -> String {
+        let path = codingPath.map(\.stringValue).joined(separator: ".")
+        return path.isEmpty ? "root" : path
     }
 }
 

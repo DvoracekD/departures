@@ -82,6 +82,35 @@ struct GTFSStopProperties: Codable, Hashable, Sendable {
         case zoneId = "zone_id"
         case aswId = "asw_id"
     }
+
+    init(
+        locationType: Int?,
+        parentStation: String?,
+        platformCode: String?,
+        stopId: String,
+        stopName: String,
+        zoneId: String?,
+        aswId: String?
+    ) {
+        self.locationType = locationType
+        self.parentStation = parentStation
+        self.platformCode = platformCode
+        self.stopId = stopId
+        self.stopName = stopName
+        self.zoneId = zoneId
+        self.aswId = aswId
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        locationType = try container.decodeIfPresent(Int.self, forKey: .locationType)
+        parentStation = try container.decodeIfPresent(String.self, forKey: .parentStation)
+        platformCode = try container.decodeIfPresent(String.self, forKey: .platformCode)
+        stopId = try container.decodeIfPresent(String.self, forKey: .stopId) ?? ""
+        stopName = try container.decodeIfPresent(String.self, forKey: .stopName) ?? ""
+        zoneId = try container.decodeIfPresent(String.self, forKey: .zoneId)
+        aswId = try container.decodeIfPresent(String.self, forKey: .aswId)
+    }
 }
 
 struct PIDDepartureBoardResponse: Decodable {
