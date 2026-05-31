@@ -8,23 +8,76 @@
 
 /* Begin PBXBuildFile section */
 		96B1A63C2FCCC17D00763899 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = 96B1A63B2FCCC17800763899 /* .gitignore */; };
+		96B1A66B2FCCEA8300763899 /* DeparturesWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 96B1A6612FCCEA8100763899 /* DeparturesWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		96B1A6692FCCEA8300763899 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 96B1A6252FCCBF2A00763899 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 96B1A6602FCCEA8100763899;
+			remoteInfo = "DeparturesWatch Watch App";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		96B1A66F2FCCEA8300763899 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				96B1A66B2FCCEA8300763899 /* DeparturesWatch Watch App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		96B1A62D2FCCBF2A00763899 /* departures.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = departures.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		96B1A63B2FCCC17800763899 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
+		96B1A6612FCCEA8100763899 /* DeparturesWatch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DeparturesWatch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		96B1A6F12FCCEA8100763899 /* Exceptions for "departures" folder in "DeparturesWatch Watch App" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Models/TransitModels.swift,
+				Services/DepartureFormatting.swift,
+				Services/WatchConnectivityService.swift,
+			);
+			target = 96B1A6602FCCEA8100763899 /* DeparturesWatch Watch App */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		96B1A62F2FCCBF2A00763899 /* departures */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				96B1A6F12FCCEA8100763899 /* Exceptions for "departures" folder in "DeparturesWatch Watch App" target */,
+			);
 			path = departures;
+			sourceTree = "<group>";
+		};
+		96B1A6622FCCEA8100763899 /* DeparturesWatch Watch App */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "DeparturesWatch Watch App";
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		96B1A62A2FCCBF2A00763899 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		96B1A65E2FCCEA8100763899 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -39,6 +92,7 @@
 			children = (
 				96B1A63B2FCCC17800763899 /* .gitignore */,
 				96B1A62F2FCCBF2A00763899 /* departures */,
+				96B1A6622FCCEA8100763899 /* DeparturesWatch Watch App */,
 				96B1A62E2FCCBF2A00763899 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -47,6 +101,7 @@
 			isa = PBXGroup;
 			children = (
 				96B1A62D2FCCBF2A00763899 /* departures.app */,
+				96B1A6612FCCEA8100763899 /* DeparturesWatch Watch App.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -61,10 +116,12 @@
 				96B1A6292FCCBF2A00763899 /* Sources */,
 				96B1A62A2FCCBF2A00763899 /* Frameworks */,
 				96B1A62B2FCCBF2A00763899 /* Resources */,
+				96B1A66F2FCCEA8300763899 /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				96B1A66A2FCCEA8300763899 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				96B1A62F2FCCBF2A00763899 /* departures */,
@@ -74,6 +131,28 @@
 			);
 			productName = departures;
 			productReference = 96B1A62D2FCCBF2A00763899 /* departures.app */;
+			productType = "com.apple.product-type.application";
+		};
+		96B1A6602FCCEA8100763899 /* DeparturesWatch Watch App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 96B1A66C2FCCEA8300763899 /* Build configuration list for PBXNativeTarget "DeparturesWatch Watch App" */;
+			buildPhases = (
+				96B1A65D2FCCEA8100763899 /* Sources */,
+				96B1A65E2FCCEA8100763899 /* Frameworks */,
+				96B1A65F2FCCEA8100763899 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				96B1A6622FCCEA8100763899 /* DeparturesWatch Watch App */,
+			);
+			name = "DeparturesWatch Watch App";
+			packageProductDependencies = (
+			);
+			productName = "DeparturesWatch Watch App";
+			productReference = 96B1A6612FCCEA8100763899 /* DeparturesWatch Watch App.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -87,6 +166,9 @@
 				LastUpgradeCheck = 2650;
 				TargetAttributes = {
 					96B1A62C2FCCBF2A00763899 = {
+						CreatedOnToolsVersion = 26.5;
+					};
+					96B1A6602FCCEA8100763899 = {
 						CreatedOnToolsVersion = 26.5;
 					};
 				};
@@ -106,6 +188,7 @@
 			projectRoot = "";
 			targets = (
 				96B1A62C2FCCBF2A00763899 /* departures */,
+				96B1A6602FCCEA8100763899 /* DeparturesWatch Watch App */,
 			);
 		};
 /* End PBXProject section */
@@ -119,6 +202,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		96B1A65F2FCCEA8100763899 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -129,7 +219,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		96B1A65D2FCCEA8100763899 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		96B1A66A2FCCEA8300763899 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 96B1A6602FCCEA8100763899 /* DeparturesWatch Watch App */;
+			targetProxy = 96B1A6692FCCEA8300763899 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		96B1A6362FCCBF2C00763899 /* Debug */ = {
@@ -336,6 +441,73 @@
 			};
 			name = Release;
 		};
+		96B1A66D2FCCEA8300763899 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 7MGXT94RPD;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = DeparturesWatch;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = dominik.dvoracek.departures;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dominik.dvoracek.departures.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.5;
+			};
+			name = Debug;
+		};
+		96B1A66E2FCCEA8300763899 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 7MGXT94RPD;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = DeparturesWatch;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = dominik.dvoracek.departures;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dominik.dvoracek.departures.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 26.5;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -353,6 +525,15 @@
 			buildConfigurations = (
 				96B1A6392FCCBF2C00763899 /* Debug */,
 				96B1A63A2FCCBF2C00763899 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		96B1A66C2FCCEA8300763899 /* Build configuration list for PBXNativeTarget "DeparturesWatch Watch App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				96B1A66D2FCCEA8300763899 /* Debug */,
+				96B1A66E2FCCEA8300763899 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
