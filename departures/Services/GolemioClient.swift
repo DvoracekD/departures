@@ -1,0 +1,185 @@
+import Foundation
+
+struct GolemioClient: Sendable {
+    private let baseURL = URL(string: "https://api.golemio.cz")!
+    private let accessToken: String
+
+    init(accessToken: String) {
+        self.accessToken = accessToken
+    }
+
+    func validateToken() async throws {
+        _ = try await fetchStopsPage(limit: 1, offset: 0)
+    }
+
+    func fetchAllStops() async throws -> [GTFSStopProperties] {
+        let pageLimit = 10_000
+        var offset = 0
+        var stops: [GTFSStopProperties] = []
+
+        while true {
+            let page = try await fetchStopsPage(limit: pageLimit, offset: offset)
+            stops.append(contentsOf: page)
+
+            if page.count < pageLimit {
+                break
+            }
+
+            offset += pageLimit
+        }
+
+        return stops
+    }
+
+    func fetchDepartures(originStopIds: [String], limit: Int = 60, minutesAfter: Int = 180) async throws -> [PIDDeparture] {
+        let stopIds = Array(originStopIds.prefix(100))
+        guard !stopIds.isEmpty else {
+            throw GolemioClientError.invalidRequest("Origin station does not contain any GTFS stop IDs.")
+        }
+
+        var queryItems = stopIds.map { URLQueryItem(name: "ids[]", value: $0) }
+        queryItems.append(contentsOf: [
+            URLQueryItem(name: "minutesBefore", value: "0"),
+            URLQueryItem(name: "minutesAfter", value: String(minutesAfter)),
+            URLQueryItem(name: "limit", value: String(limit)),
+            URLQueryItem(name: "order", value: "real"),
+            URLQueryItem(name: "mode", value: "departures"),
+            URLQueryItem(name: "skip[]", value: "canceled")
+        ])
+
+        let response: PIDDepartureBoardResponse = try await get(path: "/v2/pid/departureboards", queryItems: queryItems)
+        return response.departures
+    }
+
+    func fetchTripStopTimes(tripId: String, serviceDate: Date) async throws -> [GTFSStopTime] {
+        let encodedTripId = tripId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? tripId
+        let dateString = GolemioDateFormatters.serviceDate.string(from: serviceDate)
+        let response: GTFSTripDetailResponse = try await get(
+            path: "/v2/gtfs/trips/\(encodedTripId)",
+            queryItems: [
+                URLQueryItem(name: "includeStopTimes", value: "true"),
+                URLQueryItem(name: "date", value: dateString)
+            ]
+        )
+        return response.stopTimes ?? []
+    }
+
+    private func fetchStopsPage(limit: Int, offset: Int) async throws -> [GTFSStopProperties] {
+        let response: GTFSStopsResponse = try await get(
+            path: "/v2/gtfs/stops",
+            queryItems: [
+                URLQueryItem(name: "limit", value: String(limit)),
+                URLQueryItem(name: "offset", value: String(offset))
+            ]
+        )
+        return response.features.map(\.properties)
+    }
+
+    private func get<T: Decodable>(path: String, queryItems: [URLQueryItem]) async throws -> T {
+        let url = try makeURL(path: path, queryItems: queryItems)
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue(accessToken, forHTTPHeaderField: "X-Access-Token")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw GolemioClientError.invalidResponse
+        }
+
+        guard (200..<300).contains(httpResponse.statusCode) else {
+            let body = String(data: data, encoding: .utf8)
+            throw GolemioClientError.httpStatus(httpResponse.statusCode, body)
+        }
+
+        do {
+            return try GolemioDateFormatters.decoder.decode(T.self, from: data)
+        } catch {
+            throw GolemioClientError.decoding(error)
+        }
+    }
+
+    private func makeURL(path: String, queryItems: [URLQueryItem]) throws -> URL {
+        var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false)
+        components?.path = path
+        components?.queryItems = queryItems
+
+        guard let url = components?.url else {
+            throw GolemioClientError.invalidURL
+        }
+
+        return url
+    }
+}
+
+enum GolemioClientError: LocalizedError, Sendable {
+    case invalidURL
+    case invalidResponse
+    case invalidRequest(String)
+    case httpStatus(Int, String?)
+    case decoding(Error)
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidURL:
+            return "Could not build the Golemio API URL."
+        case .invalidResponse:
+            return "Golemio returned an invalid response."
+        case let .invalidRequest(message):
+            return message
+        case let .httpStatus(statusCode, body):
+            if statusCode == 401 {
+                return "The Golemio API token was rejected."
+            }
+
+            if let body, !body.isEmpty {
+                return "Golemio returned HTTP \(statusCode): \(body)"
+            }
+
+            return "Golemio returned HTTP \(statusCode)."
+        case let .decoding(error):
+            return "Could not read Golemio response: \(error.localizedDescription)"
+        }
+    }
+}
+
+enum GolemioDateFormatters {
+    static var decoder: JSONDecoder {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let string = try container.decode(String.self)
+
+            if let date = iso8601WithFractionalSeconds.date(from: string) ?? iso8601.date(from: string) {
+                return date
+            }
+
+            throw DecodingError.dataCorruptedError(
+                in: container,
+                debugDescription: "Expected ISO 8601 date, got \(string)."
+            )
+        }
+        return decoder
+    }
+
+    static var serviceDate: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(identifier: "Europe/Prague")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }
+
+    private static var iso8601WithFractionalSeconds: ISO8601DateFormatter {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }
+
+    private static var iso8601: ISO8601DateFormatter {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter
+    }
+}

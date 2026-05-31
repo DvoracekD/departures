@@ -1,21 +1,42 @@
-//
-//  ContentView.swift
-//  departures
-//
-//  Created by Dominik Dvoracek on 31.05.2026.
-//
-
 import SwiftUI
 
 struct ContentView: View {
+    @State private var viewModel = DeparturesViewModel()
+
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        NavigationStack {
+            Group {
+                if viewModel.isBootstrapping {
+                    ProgressView("Loading")
+                } else if !viewModel.hasToken {
+                    TokenSetupView(viewModel: viewModel)
+                } else if viewModel.connection == nil {
+                    ConnectionSetupView(viewModel: viewModel)
+                } else {
+                    DepartureDashboardView(viewModel: viewModel)
+                }
+            }
         }
-        .padding()
+        .task {
+            await viewModel.bootstrap()
+        }
+        .alert("Problem", isPresented: errorBinding) {
+            Button("OK", role: .cancel) {
+                viewModel.errorMessage = nil
+            }
+        } message: {
+            Text(viewModel.errorMessage ?? "")
+        }
+    }
+
+    private var errorBinding: Binding<Bool> {
+        Binding {
+            viewModel.errorMessage != nil
+        } set: { isPresented in
+            if !isPresented {
+                viewModel.errorMessage = nil
+            }
+        }
     }
 }
 
