@@ -145,6 +145,8 @@ final class DeparturesViewModel {
                 statusMessage = "Updated \(DepartureFormatting.updatedTime.string(from: next.updatedAt))."
                 syncToWatch()
             } else {
+                snapshot = nil
+                configurationStore.clearSnapshot()
                 statusMessage = "No upcoming direct connection found."
                 syncToWatch()
             }
@@ -168,6 +170,8 @@ final class DeparturesViewModel {
                 statusMessage = "Updated \(DepartureFormatting.updatedTime.string(from: next.updatedAt))."
                 syncToWatch()
             } else {
+                snapshot = nil
+                configurationStore.clearSnapshot()
                 statusMessage = "No upcoming direct connection found."
                 syncToWatch()
             }
@@ -206,6 +210,8 @@ final class DeparturesViewModel {
             destinationSearchText = connection.destination.name
         }
         connection = nil
+        snapshot = nil
+        configurationStore.clearSnapshot()
         Task { await loadStationsIfNeeded() }
     }
 
