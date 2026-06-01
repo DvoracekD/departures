@@ -26,15 +26,6 @@ struct NearbyDeparturesView: View {
                 }
             }
         }
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button {
-                    viewModel.forgetToken()
-                } label: {
-                    Image(systemName: "key.slash")
-                }
-            }
-        }
     }
 }
 

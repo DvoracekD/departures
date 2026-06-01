@@ -108,24 +108,6 @@ struct StationDepartureBoard: Hashable, Identifiable, Sendable {
     var id: String { station.id }
 }
 
-struct ConnectionConfiguration: Codable, Hashable, Sendable {
-    let origin: StationSelection
-    let destination: StationSelection
-}
-
-struct DepartureSnapshot: Codable, Hashable, Sendable {
-    let originName: String
-    let destinationName: String
-    let routeShortName: String
-    let scheduledDeparture: Date
-    let predictedDeparture: Date
-    let delaySeconds: Int?
-    let platformCode: String?
-    let tripId: String
-    let destinationStopName: String?
-    let updatedAt: Date
-}
-
 extension String {
     nonisolated var departuresSearchKey: String {
         folding(options: [.diacriticInsensitive, .caseInsensitive, .widthInsensitive], locale: Locale(identifier: "cs_CZ"))

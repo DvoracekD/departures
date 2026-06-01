@@ -16,7 +16,7 @@ struct ContentView: View {
                 if viewModel.isBootstrapping {
                     ProgressView("Loading")
                 } else if !viewModel.hasToken {
-                    WatchTokenSetupView(viewModel: viewModel)
+                    WaitingForTokenView()
                 } else {
                     NearbyDeparturesView(viewModel: viewModel)
                 }
@@ -42,6 +42,27 @@ struct ContentView: View {
                 viewModel.errorMessage = nil
             }
         }
+    }
+}
+
+private struct WaitingForTokenView: View {
+    var body: some View {
+        VStack(spacing: 10) {
+            Image(systemName: "iphone.and.arrow.forward")
+                .font(.title2)
+                .foregroundStyle(.secondary)
+
+            Text("Set Up on iPhone")
+                .font(.headline)
+                .multilineTextAlignment(.center)
+
+            Text("Open the Departures app on your iPhone and save your Golemio API token.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding()
     }
 }
 

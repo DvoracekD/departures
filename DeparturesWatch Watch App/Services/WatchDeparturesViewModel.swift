@@ -5,10 +5,8 @@ import Observation
 @MainActor
 @Observable
 final class WatchDeparturesViewModel {
-    var tokenDraft = ""
     var hasToken = false
     var isBootstrapping = false
-    var isSavingToken = false
     var isLoadingStations = false
     var isLocating = false
     var selectedStationID = ""
@@ -23,6 +21,8 @@ final class WatchDeparturesViewModel {
     @ObservationIgnored private var client: GolemioClient?
     @ObservationIgnored private var pollingTask: Task<Void, Never>?
     @ObservationIgnored private var didBootstrap = false
+    @ObservationIgnored private var activeToken: String?
+    @ObservationIgnored private var isReloading = false
 
     private let carouselLimit = 24
 
@@ -45,40 +45,60 @@ final class WatchDeparturesViewModel {
         isBootstrapping = true
         defer { isBootstrapping = false }
 
-        tokenDraft = tokenStore.readToken() ?? ""
-        hasToken = !tokenDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        configureClientIfPossible()
+        #if canImport(WatchConnectivity)
+        WatchConnectivityService.shared.onTokenReceived = { [weak self] token in
+            Task { await self?.applyReceivedToken(token) }
+        }
+        #endif
 
-        guard hasToken else { return }
-        await reloadNearbyStations()
-    }
-
-    func saveToken() async {
-        let token = tokenDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !token.isEmpty else {
-            errorMessage = "Enter a Golemio API token."
+        guard let token = currentToken() else {
+            hasToken = false
             return
         }
 
-        isSavingToken = true
-        defer { isSavingToken = false }
+        activeToken = token
+        client = GolemioClient(accessToken: token)
+        hasToken = true
+        await reloadNearbyStations()
+    }
 
-        do {
-            let newClient = GolemioClient(accessToken: token)
-            try await newClient.validateToken()
-            try tokenStore.saveToken(token)
+    /// Applies a token pushed from the paired iPhone while the watch app is running.
+    /// The iPhone sends the token over two channels for reliable delivery, so ignore
+    /// a token we have already applied to avoid kicking off duplicate work.
+    func applyReceivedToken(_ token: String) async {
+        let trimmed = token.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, trimmed != activeToken else { return }
 
-            client = newClient
-            hasToken = true
-            statusMessage = nil
-            await reloadNearbyStations(forceStationRefresh: true)
-        } catch {
-            errorMessage = error.localizedDescription
+        activeToken = trimmed
+        client = GolemioClient(accessToken: trimmed)
+        hasToken = true
+        errorMessage = nil
+        await reloadNearbyStations(forceStationRefresh: true)
+    }
+
+    /// Reads the token from the keychain, falling back to any token the iPhone
+    /// published before the watch app launched.
+    private func currentToken() -> String? {
+        if let stored = tokenStore.readToken()?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !stored.isEmpty {
+            return stored
         }
+
+        #if canImport(WatchConnectivity)
+        if let pending = WatchConnectivityService.shared.pendingToken() {
+            try? tokenStore.saveToken(pending)
+            return pending
+        }
+        #endif
+
+        return nil
     }
 
     func reloadNearbyStations(forceStationRefresh: Bool = false) async {
         guard let client else { return }
+        guard !isReloading else { return }
+        isReloading = true
+        defer { isReloading = false }
 
         isLocating = true
         defer { isLocating = false }
@@ -178,24 +198,6 @@ final class WatchDeparturesViewModel {
     func stopPolling() {
         pollingTask?.cancel()
         pollingTask = nil
-    }
-
-    func forgetToken() {
-        stopPolling()
-        try? tokenStore.deleteToken()
-        tokenDraft = ""
-        hasToken = false
-        client = nil
-        nearbyStations = []
-        boards = [:]
-        selectedStationID = ""
-        statusMessage = nil
-    }
-
-    private func configureClientIfPossible() {
-        let token = tokenDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !token.isEmpty else { return }
-        client = GolemioClient(accessToken: token)
     }
 
     private func setBoardRefreshing(_ isRefreshing: Bool, for station: NearbyStation) {

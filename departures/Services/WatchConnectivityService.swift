@@ -6,35 +6,15 @@ import WatchConnectivity
 final class WatchConnectivityService: NSObject, WCSessionDelegate {
     static let shared = WatchConnectivityService()
 
+    #if os(watchOS)
+    /// Invoked on the main actor whenever a fresh token arrives from the paired iPhone.
+    var onTokenReceived: ((String) -> Void)?
+    private let tokenStore = KeychainTokenStore()
+    #endif
+
     private override init() {
         super.init()
         activate()
-    }
-
-    func update(connection: ConnectionConfiguration, snapshot: DepartureSnapshot?) {
-        guard WCSession.isSupported() else { return }
-        let session = WCSession.default
-        guard session.activationState == .activated else { return }
-
-        var context: [String: Any] = [:]
-        let encoder = JSONEncoder()
-
-        if let connectionData = try? encoder.encode(connection) {
-            context[PayloadKey.connection] = connectionData
-        }
-
-        if let snapshot, let snapshotData = try? encoder.encode(snapshot) {
-            context[PayloadKey.snapshot] = snapshotData
-        }
-
-        guard !context.isEmpty else { return }
-        try? session.updateApplicationContext(context)
-
-        #if os(iOS)
-        if session.isPaired, session.isWatchAppInstalled {
-            session.transferUserInfo(context)
-        }
-        #endif
     }
 
     private func activate() {
@@ -43,6 +23,44 @@ final class WatchConnectivityService: NSObject, WCSessionDelegate {
         session.delegate = self
         session.activate()
     }
+
+    #if os(iOS)
+    func send(token: String) {
+        guard WCSession.isSupported() else { return }
+        let session = WCSession.default
+        guard session.activationState == .activated else { return }
+
+        let context = [PayloadKey.token: token]
+        try? session.updateApplicationContext(context)
+
+        if session.isPaired, session.isWatchAppInstalled {
+            session.transferUserInfo(context)
+        }
+    }
+    #endif
+
+    #if os(watchOS)
+    /// The most recent token the iPhone published while the watch app was not running.
+    func pendingToken() -> String? {
+        guard WCSession.isSupported() else { return nil }
+        let token = WCSession.default.receivedApplicationContext[PayloadKey.token] as? String
+        let trimmed = token?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return (trimmed?.isEmpty == false) ? trimmed : nil
+    }
+
+    private nonisolated func receiveToken(from payload: [String: Any]) {
+        guard let token = payload[PayloadKey.token] as? String else { return }
+        let trimmed = token.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        Task { @MainActor in self.store(trimmed) }
+    }
+
+    @MainActor
+    private func store(_ token: String) {
+        try? tokenStore.saveToken(token)
+        onTokenReceived?(token)
+    }
+    #endif
 
     nonisolated func session(
         _ session: WCSession,
@@ -59,22 +77,19 @@ final class WatchConnectivityService: NSObject, WCSessionDelegate {
         session.activate()
     }
     #endif
-}
 
-enum WatchConnectivityPayloadDecoder {
-    static func connection(from userInfo: [String: Any]) -> ConnectionConfiguration? {
-        guard let data = userInfo[PayloadKey.connection] as? Data else { return nil }
-        return try? JSONDecoder().decode(ConnectionConfiguration.self, from: data)
+    #if os(watchOS)
+    nonisolated func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
+        receiveToken(from: applicationContext)
     }
 
-    static func snapshot(from userInfo: [String: Any]) -> DepartureSnapshot? {
-        guard let data = userInfo[PayloadKey.snapshot] as? Data else { return nil }
-        return try? JSONDecoder().decode(DepartureSnapshot.self, from: data)
+    nonisolated func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
+        receiveToken(from: userInfo)
     }
+    #endif
 }
 
 private enum PayloadKey {
-    static let connection = "connection"
-    static let snapshot = "snapshot"
+    static let token = "token"
 }
 #endif
