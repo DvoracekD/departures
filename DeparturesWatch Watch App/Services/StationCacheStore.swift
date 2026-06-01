@@ -14,7 +14,7 @@ final class StationCacheStore {
         self.cacheURL = appDirectory.appendingPathComponent("station-cache.json")
     }
 
-    func loadStations(client: GolemioClient, forceRefresh: Bool = false) async throws -> [StationSelection] {
+    func loadStations(client: GolemioClient, forceRefresh: Bool = false) async throws -> [Station] {
         if !forceRefresh, let cached = try? loadFreshStations() {
             return cached
         }
@@ -25,7 +25,7 @@ final class StationCacheStore {
         return stations
     }
 
-    func loadFreshStations() throws -> [StationSelection]? {
+    func loadFreshStations() throws -> [Station]? {
         let envelope = try loadEnvelope()
         let age = Date().timeIntervalSince(envelope.refreshedAt)
         let hasCoordinates = envelope.stations.allSatisfy(\.hasCoordinate)
@@ -42,7 +42,7 @@ final class StationCacheStore {
         return try JSONDecoder().decode(StationCacheEnvelope.self, from: data)
     }
 
-    private func save(_ stations: [StationSelection]) throws {
+    private func save(_ stations: [Station]) throws {
         let directory = cacheURL.deletingLastPathComponent()
         try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
 
@@ -55,12 +55,12 @@ final class StationCacheStore {
 }
 
 private struct StationCacheEnvelope: Codable {
-    let stations: [StationSelection]
+    let stations: [Station]
     let refreshedAt: Date
 }
 
 enum StationIndexBuilder {
-    nonisolated static func makeStations(from features: [GTFSStopFeature]) -> [StationSelection] {
+    nonisolated static func makeStations(from features: [GTFSStopFeature]) -> [Station] {
         let stops = features.compactMap { feature -> StationStop? in
             let properties = feature.properties
             guard (properties.locationType ?? 0) == 0,
@@ -74,8 +74,7 @@ enum StationIndexBuilder {
         }
 
         let uniqueStops = Dictionary(grouping: stops, by: \.properties.stopId)
-        .compactMap { _, groupedStops in groupedStops.first }
-
+            .compactMap { _, groupedStops in groupedStops.first }
         let groupedStops = Dictionary(grouping: uniqueStops, by: stationGroupKey(for:))
 
         return groupedStops.values.compactMap { stops in
@@ -99,7 +98,7 @@ enum StationIndexBuilder {
         return "name:\(stop.properties.stopName.departuresSearchKey)|zone:\(zone)"
     }
 
-    nonisolated private static func makeStation(from stops: [StationStop]) -> StationSelection? {
+    nonisolated private static func makeStation(from stops: [StationStop]) -> Station? {
         let stopIds = stops.map(\.properties.stopId).uniqueSorted()
         guard !stopIds.isEmpty else { return nil }
 
@@ -120,7 +119,7 @@ enum StationIndexBuilder {
         let latitude = stops.map(\.coordinate.latitude).reduce(0, +) / Double(stops.count)
         let longitude = stops.map(\.coordinate.longitude).reduce(0, +) / Double(stops.count)
 
-        return StationSelection(
+        return Station(
             id: id,
             name: name,
             stopIds: stopIds,

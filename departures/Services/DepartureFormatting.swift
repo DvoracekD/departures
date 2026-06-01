@@ -56,4 +56,13 @@ enum DepartureFormatting {
 
         return "\(minutes) min"
     }
+
+    static func distanceText(meters: Double) -> String {
+        if meters < 950 {
+            return "\(Int(meters.rounded())) m"
+        }
+
+        let kilometers = meters / 1_000
+        return String(format: "%.1f km", kilometers)
+    }
 }

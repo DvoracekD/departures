@@ -1,3 +1,4 @@
+import CoreLocation
 import Foundation
 
 struct StationSelection: Codable, Hashable, Identifiable, Sendable {
@@ -6,8 +7,57 @@ struct StationSelection: Codable, Hashable, Identifiable, Sendable {
     let stopIds: [String]
     let platformCodes: [String]
     let zoneIds: [String]
+    let latitude: Double
+    let longitude: Double
 
-    var displayDetail: String {
+    enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case stopIds
+        case platformCodes
+        case zoneIds
+        case latitude
+        case longitude
+    }
+
+    nonisolated init(
+        id: String,
+        name: String,
+        stopIds: [String],
+        platformCodes: [String],
+        zoneIds: [String],
+        latitude: Double = 0,
+        longitude: Double = 0
+    ) {
+        self.id = id
+        self.name = name
+        self.stopIds = stopIds
+        self.platformCodes = platformCodes
+        self.zoneIds = zoneIds
+        self.latitude = latitude
+        self.longitude = longitude
+    }
+
+    nonisolated init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        stopIds = try container.decode([String].self, forKey: .stopIds)
+        platformCodes = try container.decode([String].self, forKey: .platformCodes)
+        zoneIds = try container.decode([String].self, forKey: .zoneIds)
+        latitude = try container.decodeIfPresent(Double.self, forKey: .latitude) ?? 0
+        longitude = try container.decodeIfPresent(Double.self, forKey: .longitude) ?? 0
+    }
+
+    nonisolated var coordinate: CLLocationCoordinate2D {
+        CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+    }
+
+    nonisolated var hasCoordinate: Bool {
+        latitude != 0 || longitude != 0
+    }
+
+    nonisolated var displayDetail: String {
         let platforms = platformCodes.isEmpty ? nil : "Platforms " + platformCodes.prefix(6).joined(separator: ", ")
         let zones = zoneIds.isEmpty ? nil : "Zones " + zoneIds.joined(separator: ", ")
 
@@ -23,9 +73,39 @@ struct StationSelection: Codable, Hashable, Identifiable, Sendable {
         }
     }
 
-    var searchText: String {
+    nonisolated var searchText: String {
         ([name] + platformCodes + zoneIds).joined(separator: " ").departuresSearchKey
     }
+}
+
+typealias Station = StationSelection
+
+struct NearbyStation: Hashable, Identifiable, Sendable {
+    let station: Station
+    let distanceMeters: CLLocationDistance
+
+    var id: String { station.id }
+}
+
+struct WatchDeparture: Hashable, Identifiable, Sendable {
+    let id: String
+    let routeName: String
+    let terminalName: String
+    let scheduledDeparture: Date
+    let predictedDeparture: Date
+    let delaySeconds: Int?
+    let platformCode: String?
+    let updatedAt: Date
+}
+
+struct StationDepartureBoard: Hashable, Identifiable, Sendable {
+    let station: NearbyStation
+    var departures: [WatchDeparture] = []
+    var isRefreshing = false
+    var lastUpdatedAt: Date?
+    var errorMessage: String?
+
+    var id: String { station.id }
 }
 
 struct ConnectionConfiguration: Codable, Hashable, Sendable {
@@ -61,7 +141,17 @@ struct GTFSStopsResponse: Decodable {
 }
 
 struct GTFSStopFeature: Decodable {
+    let geometry: GeoJSONPoint?
     let properties: GTFSStopProperties
+}
+
+struct GeoJSONPoint: Decodable, Hashable, Sendable {
+    let coordinates: [Double]
+
+    nonisolated var coordinate: CLLocationCoordinate2D? {
+        guard coordinates.count >= 2 else { return nil }
+        return CLLocationCoordinate2D(latitude: coordinates[1], longitude: coordinates[0])
+    }
 }
 
 struct GTFSStopProperties: Codable, Hashable, Sendable {
@@ -113,6 +203,11 @@ struct GTFSStopProperties: Codable, Hashable, Sendable {
     }
 }
 
+struct StationStop: Sendable {
+    let properties: GTFSStopProperties
+    let coordinate: CLLocationCoordinate2D
+}
+
 struct PIDDepartureBoardResponse: Decodable {
     let departures: [PIDDeparture]
 }
@@ -130,6 +225,26 @@ struct PIDDeparture: Decodable, Hashable, Sendable {
         case route
         case stop
         case trip
+    }
+}
+
+extension PIDDeparture {
+    func makeWatchDeparture(updatedAt: Date) -> WatchDeparture {
+        let scheduled = departureTimestamp.scheduled
+        let predicted = departureTimestamp.predicted ?? scheduled
+        let routeName = route.shortName ?? trip.shortName ?? "?"
+        let delaySeconds = delay.isAvailable ? Int((delay.seconds ?? 0).rounded()) : nil
+
+        return WatchDeparture(
+            id: "\(trip.id)|\(stop.id)|\(scheduled.timeIntervalSinceReferenceDate)",
+            routeName: routeName,
+            terminalName: trip.headsign,
+            scheduledDeparture: scheduled,
+            predictedDeparture: predicted,
+            delaySeconds: delaySeconds,
+            platformCode: stop.platformCode,
+            updatedAt: updatedAt
+        )
     }
 }
 

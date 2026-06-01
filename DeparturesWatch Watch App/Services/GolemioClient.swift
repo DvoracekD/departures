@@ -9,11 +9,7 @@ struct GolemioClient: Sendable {
     }
 
     func validateToken() async throws {
-        _ = try await fetchStopsPage(limit: 1, offset: 0)
-    }
-
-    func fetchAllStops() async throws -> [GTFSStopProperties] {
-        try await fetchAllStopFeatures().map(\.properties)
+        _ = try await fetchStopFeaturesPage(limit: 1, offset: 0)
     }
 
     func fetchAllStopFeatures() async throws -> [GTFSStopFeature] {
@@ -35,14 +31,10 @@ struct GolemioClient: Sendable {
         return stops
     }
 
-    func fetchDepartures(originStopIds: [String], limit: Int = 60, minutesAfter: Int = 180) async throws -> [PIDDeparture] {
-        try await fetchDepartures(stopIds: originStopIds, limit: limit, minutesAfter: minutesAfter)
-    }
-
-    func fetchDepartures(stopIds originStopIds: [String], limit: Int = 60, minutesAfter: Int = 180) async throws -> [PIDDeparture] {
+    func fetchDepartures(stopIds originStopIds: [String], limit: Int = 3, minutesAfter: Int = 90) async throws -> [PIDDeparture] {
         let stopIds = Array(originStopIds.prefix(100))
         guard !stopIds.isEmpty else {
-            throw GolemioClientError.invalidRequest("Origin station does not contain any GTFS stop IDs.")
+            throw GolemioClientError.invalidRequest("Station does not contain any GTFS stop IDs.")
         }
 
         var queryItems = stopIds.map { URLQueryItem(name: "ids[]", value: $0) }
@@ -57,23 +49,6 @@ struct GolemioClient: Sendable {
 
         let response: PIDDepartureBoardResponse = try await get(path: "/v2/pid/departureboards", queryItems: queryItems)
         return response.departures
-    }
-
-    func fetchTripStopTimes(tripId: String, serviceDate: Date) async throws -> [GTFSStopTime] {
-        let encodedTripId = tripId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? tripId
-        let dateString = GolemioDateFormatters.serviceDate.string(from: serviceDate)
-        let response: GTFSTripDetailResponse = try await get(
-            path: "/v2/gtfs/trips/\(encodedTripId)",
-            queryItems: [
-                URLQueryItem(name: "includeStopTimes", value: "true"),
-                URLQueryItem(name: "date", value: dateString)
-            ]
-        )
-        return response.stopTimes ?? []
-    }
-
-    private func fetchStopsPage(limit: Int, offset: Int) async throws -> [GTFSStopProperties] {
-        try await fetchStopFeaturesPage(limit: limit, offset: offset).map(\.properties)
     }
 
     private func fetchStopFeaturesPage(limit: Int, offset: Int) async throws -> [GTFSStopFeature] {
@@ -196,15 +171,6 @@ enum GolemioDateFormatters {
             )
         }
         return decoder
-    }
-
-    static var serviceDate: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone(identifier: "Europe/Prague")
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter
     }
 
     private static var iso8601WithFractionalSeconds: ISO8601DateFormatter {
