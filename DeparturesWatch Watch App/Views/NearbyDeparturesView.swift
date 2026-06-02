@@ -118,9 +118,10 @@ private struct StationDeparturePage: View {
                     Task { await refreshAction() }
                 } label: {
                     Image(systemName: board?.isRefreshing == true ? "hourglass" : "arrow.clockwise")
-                        .font(.headline)
+                        .font(.caption)
                 }
                 .buttonStyle(.bordered)
+                .buttonBorderShape(.circle)
                 .disabled(board?.isRefreshing == true)
                 .controlSize(.mini)
             }
