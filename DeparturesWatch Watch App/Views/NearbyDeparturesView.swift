@@ -155,10 +155,12 @@ private struct DepartureRow: View {
                         .font(.caption.weight(.semibold))
                         .monospacedDigit()
 
-                    Text(DepartureFormatting.delayText(seconds: departure.delaySeconds))
-                        .font(.caption2.weight(.medium))
-                        .foregroundStyle(delayColor)
-                        .lineLimit(1)
+                    if let delaySeconds = departure.delaySeconds {
+                        Text(DepartureFormatting.delayText(seconds: delaySeconds))
+                            .font(.caption2.weight(.medium))
+                            .foregroundStyle(delayColor)
+                            .lineLimit(1)
+                    }
 
                     if let platformCode = departure.platformCode, !platformCode.isEmpty {
                         Text(platformCode)

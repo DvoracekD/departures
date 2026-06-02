@@ -122,11 +122,13 @@ private struct CountdownView: View {
                 Text(DepartureFormatting.countdownText(to: target, now: context.date, showSeconds: !isDimmed))
                     .font(.system(.largeTitle, design: .rounded).monospacedDigit().weight(.semibold))
 
-                Text(DepartureFormatting.delayText(seconds: delaySeconds))
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(delayColor)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
+                if let delaySeconds {
+                    Text(DepartureFormatting.delayText(seconds: delaySeconds))
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(delayColor)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
