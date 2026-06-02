@@ -20,7 +20,7 @@ struct NearbyDeparturesView: View {
                         .tag(station.id)
                     }
                 }
-                .tabViewStyle(.carousel)
+                .tabViewStyle(.page)
                 .onChange(of: viewModel.selectedStationID) {
                     viewModel.selectedStationDidChange()
                 }
