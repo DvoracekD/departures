@@ -24,6 +24,9 @@ struct NearbyDeparturesView: View {
                 .onChange(of: viewModel.selectedStationID) {
                     viewModel.selectedStationDidChange()
                 }
+                .navigationDestination(for: WatchDeparture.self) { departure in
+                    ConnectionDetailView(initialDeparture: departure, viewModel: viewModel)
+                }
             }
         }
     }
@@ -75,7 +78,10 @@ private struct StationDeparturePage: View {
                 } else if let board, !board.departures.isEmpty {
                     VStack(spacing: 7) {
                         ForEach(board.departures) { departure in
-                            DepartureRow(departure: departure)
+                            NavigationLink(value: departure) {
+                                DepartureRow(departure: departure)
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                 } else {

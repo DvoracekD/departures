@@ -57,6 +57,28 @@ enum DepartureFormatting {
         return "\(minutes) min"
     }
 
+    /// Countdown to a departure. `showSeconds == true` renders "M:SS" ("4:35", "0:09");
+    /// when dimmed in always-on mode pass `false` for coarse minutes ("5 min"), since
+    /// the screen only refreshes about once a minute then. Past the departure time it
+    /// returns "Now" and shortly after "Departed".
+    static func countdownText(to date: Date, now: Date = Date(), showSeconds: Bool = true) -> String {
+        let remaining = Int(date.timeIntervalSince(now).rounded())
+
+        if remaining <= -30 {
+            return "Departed"
+        }
+
+        if remaining <= 0 {
+            return "Now"
+        }
+
+        if showSeconds {
+            return String(format: "%d:%02d", remaining / 60, remaining % 60)
+        }
+
+        return "\(max(1, Int((Double(remaining) / 60.0).rounded(.up)))) min"
+    }
+
     static func distanceText(meters: Double) -> String {
         if meters < 950 {
             return "\(Int(meters.rounded())) m"

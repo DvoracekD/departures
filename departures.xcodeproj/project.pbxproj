@@ -51,6 +51,13 @@
 			);
 			target = 96B1A6602FCCEA8100763899 /* DeparturesWatch Watch App */;
 		};
+		96B1A6F22FCCEA8100763899 /* Exceptions for "DeparturesWatch Watch App" folder in "DeparturesWatch Watch App" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 96B1A6602FCCEA8100763899 /* DeparturesWatch Watch App */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -64,6 +71,9 @@
 		};
 		96B1A6622FCCEA8100763899 /* DeparturesWatch Watch App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				96B1A6F22FCCEA8100763899 /* Exceptions for "DeparturesWatch Watch App" folder in "DeparturesWatch Watch App" target */,
+			);
 			path = "DeparturesWatch Watch App";
 			sourceTree = "<group>";
 		};
@@ -451,6 +461,7 @@
 				DEVELOPMENT_TEAM = 7MGXT94RPD;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "DeparturesWatch Watch App/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = DeparturesWatch;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Your location is used to find nearby transit stops and their departures.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
@@ -485,6 +496,7 @@
 				DEVELOPMENT_TEAM = 7MGXT94RPD;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "DeparturesWatch Watch App/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = DeparturesWatch;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Your location is used to find nearby transit stops and their departures.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
