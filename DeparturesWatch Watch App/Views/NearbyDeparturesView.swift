@@ -99,32 +99,29 @@ private struct StationDeparturePage: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .top, spacing: 6) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(station.station.name)
-                        .font(.headline)
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.75)
+        HStack(alignment: .top, spacing: 6) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(station.station.name)
+                    .font(.headline)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.75)
 
-                    Text(DepartureFormatting.distanceText(meters: station.distanceMeters))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer(minLength: 4)
-
-                Button {
-                    Task { await refreshAction() }
-                } label: {
-                    Image(systemName: board?.isRefreshing == true ? "hourglass" : "arrow.clockwise")
-                        .font(.caption)
-                }
-                .buttonStyle(.bordered)
-                .buttonBorderShape(.circle)
-                .disabled(board?.isRefreshing == true)
-                .controlSize(.mini)
+                Text(DepartureFormatting.distanceText(meters: station.distanceMeters))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Button {
+                Task { await refreshAction() }
+            } label: {
+                Image(systemName: board?.isRefreshing == true ? "hourglass" : "arrow.clockwise")
+                    .font(.caption)
+            }
+            .buttonStyle(.bordered)
+            .buttonBorderShape(.circle)
+            .disabled(board?.isRefreshing == true)
+            .controlSize(.mini)
         }
     }
 }
