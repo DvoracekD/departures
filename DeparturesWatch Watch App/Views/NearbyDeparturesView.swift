@@ -196,6 +196,92 @@ private struct EmptyDeparturesView: View {
     }
 }
 
-#Preview {
-    NearbyDeparturesView(viewModel: WatchDeparturesViewModel())
+#if DEBUG
+private enum PreviewData {
+    static func station(id: String, name: String, distance: Double) -> NearbyStation {
+        NearbyStation(
+            station: Station(
+                id: id,
+                name: name,
+                stopIds: ["\(id)Z1", "\(id)Z2"],
+                platformCodes: ["A", "B"],
+                zoneIds: ["P"],
+                latitude: 50.08,
+                longitude: 14.43
+            ),
+            distanceMeters: distance
+        )
+    }
+
+    static func departure(route: String, head: String, inMinutes: Int, delay: Int?, platform: String?) -> WatchDeparture {
+        let predicted = Date().addingTimeInterval(TimeInterval(inMinutes * 60))
+        return WatchDeparture(
+            id: "\(route)-\(head)-\(inMinutes)",
+            routeName: route,
+            terminalName: head,
+            scheduledDeparture: predicted.addingTimeInterval(TimeInterval(-(delay ?? 0))),
+            predictedDeparture: predicted,
+            delaySeconds: delay,
+            platformCode: platform,
+            updatedAt: Date()
+        )
+    }
+
+    static let stationA = station(id: "U123", name: "Anděl", distance: 120)
+    static let stationB = station(id: "U456", name: "Náměstí Míru", distance: 540)
+
+    static var board: StationDepartureBoard {
+        var board = StationDepartureBoard(station: stationA)
+        board.departures = [
+            departure(route: "5", head: "Olšanské hřbitovy", inMinutes: 2, delay: 30, platform: "A"),
+            departure(route: "12", head: "Sídliště Barrandov", inMinutes: 6, delay: nil, platform: "B"),
+            departure(route: "B", head: "Černý Most", inMinutes: 9, delay: -60, platform: nil),
+        ]
+        board.lastUpdatedAt = Date()
+        return board
+    }
 }
+
+@MainActor
+private func previewViewModel(populated: Bool = true, refreshing: Bool = false) -> WatchDeparturesViewModel {
+    let viewModel = WatchDeparturesViewModel()
+    guard populated else { return viewModel }
+
+    viewModel.nearbyStations = [PreviewData.stationA, PreviewData.stationB]
+    viewModel.selectedStationID = PreviewData.stationA.id
+
+    var board = PreviewData.board
+    board.isRefreshing = refreshing
+    viewModel.boards = [
+        PreviewData.stationA.id: board,
+        PreviewData.stationB.id: StationDepartureBoard(station: PreviewData.stationB),
+    ]
+    return viewModel
+}
+
+#Preview("Populated") {
+    NearbyDeparturesView(viewModel: previewViewModel())
+}
+
+#Preview("Refreshing") {
+    NearbyDeparturesView(viewModel: previewViewModel(refreshing: true))
+}
+
+#Preview("Empty / No Stops") {
+    NearbyDeparturesView(viewModel: previewViewModel(populated: false))
+}
+
+#Preview("Station Page") {
+    StationDeparturePage(
+        station: PreviewData.stationA,
+        board: PreviewData.board,
+        refreshAction: {}
+    )
+}
+
+#Preview("Departure Row") {
+    DepartureRow(departure: PreviewData.departure(
+        route: "5", head: "Olšanské hřbitovy", inMinutes: 2, delay: 30, platform: "A"
+    ))
+}
+#endif
