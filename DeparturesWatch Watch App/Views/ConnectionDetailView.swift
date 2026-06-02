@@ -23,11 +23,18 @@ struct ConnectionDetailView: View {
         liveDeparture ?? initialDeparture
     }
 
+    /// The station this departure leaves from — the board that holds it.
+    private var stationName: String? {
+        viewModel.boards.values
+            .first { board in board.departures.contains { $0.id == initialDeparture.id } }?
+            .station.station.name
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 header
-                CountdownView(target: departure.predictedDeparture)
+                CountdownView(target: departure.predictedDeparture, delaySeconds: departure.delaySeconds)
                 Divider()
                 details
 
@@ -48,15 +55,25 @@ struct ConnectionDetailView: View {
     }
 
     private var header: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text(departure.routeName)
-                .font(.title3.weight(.bold))
-                .monospacedDigit()
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(departure.routeName)
+                    .font(.title3.weight(.bold))
+                    .monospacedDigit()
 
-            Text(departure.terminalName)
-                .font(.headline)
-                .lineLimit(2)
-                .minimumScaleFactor(0.7)
+                Text(departure.terminalName)
+                    .font(.headline)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.7)
+            }
+
+            if let stationName {
+                Label(stationName, systemImage: "mappin.and.ellipse")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -68,12 +85,6 @@ struct ConnectionDetailView: View {
             if departure.predictedDeparture != departure.scheduledDeparture {
                 detailRow(label: "Scheduled", value: DepartureFormatting.departureTime.string(from: departure.scheduledDeparture))
             }
-
-            detailRow(
-                label: "Delay",
-                value: DepartureFormatting.delayText(seconds: departure.delaySeconds),
-                valueColor: delayColor
-            )
 
             if let platformCode = departure.platformCode, !platformCode.isEmpty {
                 detailRow(label: "Platform", value: platformCode)
@@ -94,13 +105,6 @@ struct ConnectionDetailView: View {
                 .lineLimit(1)
         }
     }
-
-    private var delayColor: Color {
-        guard let delaySeconds = departure.delaySeconds else { return .secondary }
-        if delaySeconds > 60 { return .red }
-        if delaySeconds < 0 { return .blue }
-        return .green
-    }
 }
 
 /// Live countdown to the departure. Ticks every second while the wrist is up; switches
@@ -108,15 +112,31 @@ struct ConnectionDetailView: View {
 /// the screen about once a minute (a ticking seconds value would otherwise look frozen).
 private struct CountdownView: View {
     let target: Date
+    let delaySeconds: Int?
 
     @Environment(\.isLuminanceReduced) private var isDimmed
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: isDimmed ? 60 : 1)) { context in
-            Text(DepartureFormatting.countdownText(to: target, now: context.date, showSeconds: !isDimmed))
-                .font(.system(.largeTitle, design: .rounded).monospacedDigit().weight(.semibold))
-                .frame(maxWidth: .infinity, alignment: .leading)
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(DepartureFormatting.countdownText(to: target, now: context.date, showSeconds: !isDimmed))
+                    .font(.system(.largeTitle, design: .rounded).monospacedDigit().weight(.semibold))
+
+                Text(DepartureFormatting.delayText(seconds: delaySeconds))
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(delayColor)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    private var delayColor: Color {
+        guard let delaySeconds else { return .secondary }
+        if delaySeconds > 60 { return .red }
+        if delaySeconds < 0 { return .blue }
+        return .green
     }
 }
 

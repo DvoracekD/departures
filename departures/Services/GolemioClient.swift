@@ -35,19 +35,22 @@ struct GolemioClient: Sendable {
         return stops
     }
 
-    func fetchDepartures(originStopIds: [String], limit: Int = 60, minutesAfter: Int = 180) async throws -> [PIDDeparture] {
-        try await fetchDepartures(stopIds: originStopIds, limit: limit, minutesAfter: minutesAfter)
+    func fetchDepartures(originStopIds: [String], limit: Int = 60, minutesBefore: Int = 30, minutesAfter: Int = 180) async throws -> [PIDDeparture] {
+        try await fetchDepartures(stopIds: originStopIds, limit: limit, minutesBefore: minutesBefore, minutesAfter: minutesAfter)
     }
 
-    func fetchDepartures(stopIds originStopIds: [String], limit: Int = 60, minutesAfter: Int = 180) async throws -> [PIDDeparture] {
+    func fetchDepartures(stopIds originStopIds: [String], limit: Int = 60, minutesBefore: Int = 30, minutesAfter: Int = 180) async throws -> [PIDDeparture] {
         let stopIds = Array(originStopIds.prefix(100))
         guard !stopIds.isEmpty else {
             throw GolemioClientError.invalidRequest("Origin station does not contain any GTFS stop IDs.")
         }
 
+        // The API windows by scheduled time, so look back up to 30 minutes to keep
+        // delayed departures whose real time is still in the future.
+        let clampedMinutesBefore = min(max(0, minutesBefore), 30)
         var queryItems = stopIds.map { URLQueryItem(name: "ids[]", value: $0) }
         queryItems.append(contentsOf: [
-            URLQueryItem(name: "minutesBefore", value: "0"),
+            URLQueryItem(name: "minutesBefore", value: String(clampedMinutesBefore)),
             URLQueryItem(name: "minutesAfter", value: String(minutesAfter)),
             URLQueryItem(name: "limit", value: String(limit)),
             URLQueryItem(name: "order", value: "real"),

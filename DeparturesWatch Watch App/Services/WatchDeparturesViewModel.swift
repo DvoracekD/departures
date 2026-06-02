@@ -159,9 +159,14 @@ final class WatchDeparturesViewModel {
 
         do {
             let updatedAt = Date()
-            let departures = try await client.fetchDepartures(stopIds: station.station.stopIds, limit: 3)
+            // Fetch a wider window (looking back up to 30 minutes) so delayed
+            // departures stay in the list, then keep only the ones whose real
+            // time is still in the future. The look-back can return many rows
+            // that have already departed, so request more than the 3 we show.
+            let departures = try await client.fetchDepartures(stopIds: station.station.stopIds, limit: 40)
                 .filter { $0.trip.isCanceled != true }
                 .map { $0.makeWatchDeparture(updatedAt: updatedAt) }
+                .filter { $0.predictedDeparture >= updatedAt }
                 .sorted { lhs, rhs in
                     lhs.predictedDeparture < rhs.predictedDeparture
                 }
