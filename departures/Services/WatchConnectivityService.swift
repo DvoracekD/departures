@@ -9,6 +9,8 @@ final class WatchConnectivityService: NSObject, WCSessionDelegate {
     #if os(watchOS)
     /// Invoked on the main actor whenever a fresh token arrives from the paired iPhone.
     var onTokenReceived: ((String) -> Void)?
+    /// Invoked on the main actor whenever fresh nearby-station preferences arrive.
+    var onPreferencesReceived: ((NearbyStationsPreferences) -> Void)?
     private let tokenStore = KeychainTokenStore()
     #endif
 
@@ -26,15 +28,28 @@ final class WatchConnectivityService: NSObject, WCSessionDelegate {
 
     #if os(iOS)
     func send(token: String) {
+        publish([PayloadKey.token: token])
+    }
+
+    func send(preferences: NearbyStationsPreferences) {
+        guard let data = try? JSONEncoder().encode(preferences) else { return }
+        publish([PayloadKey.preferences: data])
+    }
+
+    /// Merges `values` into the watch's application context (so the latest token
+    /// and preferences both survive), and also delivers them while the watch app
+    /// is running.
+    private func publish(_ values: [String: Any]) {
         guard WCSession.isSupported() else { return }
         let session = WCSession.default
         guard session.activationState == .activated else { return }
 
-        let context = [PayloadKey.token: token]
+        var context = session.applicationContext
+        context.merge(values) { _, new in new }
         try? session.updateApplicationContext(context)
 
         if session.isPaired, session.isWatchAppInstalled {
-            session.transferUserInfo(context)
+            session.transferUserInfo(values)
         }
     }
     #endif
@@ -48,11 +63,27 @@ final class WatchConnectivityService: NSObject, WCSessionDelegate {
         return (trimmed?.isEmpty == false) ? trimmed : nil
     }
 
-    private nonisolated func receiveToken(from payload: [String: Any]) {
-        guard let token = payload[PayloadKey.token] as? String else { return }
-        let trimmed = token.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        Task { @MainActor in self.store(trimmed) }
+    /// The most recent preferences the iPhone published while the watch app was not running.
+    func pendingPreferences() -> NearbyStationsPreferences? {
+        guard WCSession.isSupported() else { return nil }
+        guard let data = WCSession.default.receivedApplicationContext[PayloadKey.preferences] as? Data else {
+            return nil
+        }
+        return try? JSONDecoder().decode(NearbyStationsPreferences.self, from: data)
+    }
+
+    private nonisolated func receive(from payload: [String: Any]) {
+        if let token = payload[PayloadKey.token] as? String {
+            let trimmed = token.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty {
+                Task { @MainActor in self.store(trimmed) }
+            }
+        }
+
+        if let data = payload[PayloadKey.preferences] as? Data,
+           let preferences = try? JSONDecoder().decode(NearbyStationsPreferences.self, from: data) {
+            Task { @MainActor in self.onPreferencesReceived?(preferences) }
+        }
     }
 
     @MainActor
@@ -80,16 +111,17 @@ final class WatchConnectivityService: NSObject, WCSessionDelegate {
 
     #if os(watchOS)
     nonisolated func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
-        receiveToken(from: applicationContext)
+        receive(from: applicationContext)
     }
 
     nonisolated func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
-        receiveToken(from: userInfo)
+        receive(from: userInfo)
     }
     #endif
 }
 
 private enum PayloadKey {
     static let token = "token"
+    static let preferences = "preferences"
 }
 #endif

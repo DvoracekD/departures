@@ -87,6 +87,24 @@ struct NearbyStation: Hashable, Identifiable, Sendable {
     var id: String { station.id }
 }
 
+/// User-configurable limits for the nearby-station list, set on the iPhone and
+/// synced to the watch.
+struct NearbyStationsPreferences: Codable, Hashable, Sendable {
+    /// Stations farther than this from the user are hidden.
+    var maxDistanceMeters: Double
+    /// At most this many stations are shown, closest first.
+    var maxStationCount: Int
+
+    static let distanceRange: ClosedRange<Double> = 250...5000
+    static let countRange: ClosedRange<Int> = 1...20
+    static let `default` = NearbyStationsPreferences()
+
+    nonisolated init(maxDistanceMeters: Double = 1000, maxStationCount: Int = 10) {
+        self.maxDistanceMeters = min(max(maxDistanceMeters, Self.distanceRange.lowerBound), Self.distanceRange.upperBound)
+        self.maxStationCount = min(max(maxStationCount, Self.countRange.lowerBound), Self.countRange.upperBound)
+    }
+}
+
 struct WatchDeparture: Hashable, Identifiable, Sendable {
     let id: String
     let routeName: String

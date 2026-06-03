@@ -55,6 +55,29 @@ struct KeychainTokenStore: Sendable {
     }
 }
 
+/// Persists the user's nearby-station preferences on this iPhone.
+struct PreferencesStore: Sendable {
+    private let key = "nearbyStationsPreferences"
+    private let defaults: UserDefaults
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+    }
+
+    func read() -> NearbyStationsPreferences {
+        guard let data = defaults.data(forKey: key),
+              let preferences = try? JSONDecoder().decode(NearbyStationsPreferences.self, from: data) else {
+            return .default
+        }
+        return preferences
+    }
+
+    func save(_ preferences: NearbyStationsPreferences) {
+        guard let data = try? JSONEncoder().encode(preferences) else { return }
+        defaults.set(data, forKey: key)
+    }
+}
+
 enum KeychainTokenStoreError: LocalizedError, Sendable {
     case invalidToken
     case unhandledStatus(OSStatus)

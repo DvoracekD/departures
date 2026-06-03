@@ -14,6 +14,7 @@ final class WatchDeparturesViewModel {
     var boards: [String: StationDepartureBoard] = [:]
     var errorMessage: String?
     var statusMessage: String?
+    var preferences = NearbyStationsPreferences.default
 
     @ObservationIgnored private let tokenStore = KeychainTokenStore()
     @ObservationIgnored private let stationCache = StationCacheStore()
@@ -23,8 +24,6 @@ final class WatchDeparturesViewModel {
     @ObservationIgnored private var didBootstrap = false
     @ObservationIgnored private var activeToken: String?
     @ObservationIgnored private var isReloading = false
-
-    private let carouselLimit = 24
 
     deinit {
         pollingTask?.cancel()
@@ -48,6 +47,12 @@ final class WatchDeparturesViewModel {
         #if canImport(WatchConnectivity)
         WatchConnectivityService.shared.onTokenReceived = { [weak self] token in
             Task { await self?.applyReceivedToken(token) }
+        }
+        WatchConnectivityService.shared.onPreferencesReceived = { [weak self] preferences in
+            Task { await self?.applyReceivedPreferences(preferences) }
+        }
+        if let pending = WatchConnectivityService.shared.pendingPreferences() {
+            preferences = pending
         }
         #endif
 
@@ -74,6 +79,14 @@ final class WatchDeparturesViewModel {
         hasToken = true
         errorMessage = nil
         await reloadNearbyStations(forceStationRefresh: true)
+    }
+
+    /// Applies nearby-station preferences pushed from the paired iPhone and
+    /// re-filters the list with the new radius and count.
+    func applyReceivedPreferences(_ preferences: NearbyStationsPreferences) async {
+        guard preferences != self.preferences else { return }
+        self.preferences = preferences
+        await reloadNearbyStations()
     }
 
     /// Reads the token from the keychain, falling back to any token the iPhone
@@ -123,7 +136,11 @@ final class WatchDeparturesViewModel {
                     lhs.distanceMeters < rhs.distanceMeters
                 }
 
-            nearbyStations = Array(sorted.prefix(carouselLimit))
+            nearbyStations = Array(
+                sorted
+                    .filter { $0.distanceMeters <= preferences.maxDistanceMeters }
+                    .prefix(preferences.maxStationCount)
+            )
             selectedStationID = nearbyStations.first?.id ?? ""
             boards = Dictionary(uniqueKeysWithValues: nearbyStations.map { station in
                 (station.id, boards[station.id] ?? StationDepartureBoard(station: station))
